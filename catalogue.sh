@@ -7,88 +7,79 @@ Y="\e[33m"
 N="\e[0m"
 
 LOGS_FOLDER="/var/log/shell-roboshop"
-SCRIPT_NAME=$( echo $0 | cut -d "." -f3 )
-LOG_FILE="$LOGS_FOLDER/$SCRIPT_NAME.log"
-MONGODB_HOST=mongodb.daws86a.store
+SCRIPT_NAME=$( echo $0 | cut -d "." -f1 )
 SCRIPT_DIR=$PWD
+MONGODB_HOST=mongodb.daws86s.fun
+LOG_FILE="$LOGS_FOLDER/$SCRIPT_NAME.log" # /var/log/shell-script/16-logs.log
 
 mkdir -p $LOGS_FOLDER
-echo "script started executed at: $(date)" | tee -a $LOG_FILE
+echo "Script started executed at: $(date)" | tee -a $LOG_FILE
+
 if [ $USERID -ne 0 ]; then
-    echo " $R Error: Please run this script with root privilege $Y "
+    echo "ERROR:: Please run this script with root privelege"
     exit 1 # failure is other than 0
 fi
-VALIDATE(){
-    if [ $1 -ne 0 ]; then
-        echo -e "Error:  $2.... $R Failure $N"
-        exit 2 
 
-    else 
-        echo -e " $2...  $G success $N"
+VALIDATE(){ # functions receive inputs through args just like shell script args
+    if [ $1 -ne 0 ]; then
+        echo -e "$2 ... $R FAILURE $N" | tee -a $LOG_FILE
+        exit 1
+    else
+        echo -e "$2 ... $G SUCCESS $N" | tee -a $LOG_FILE
     fi
 }
 
-##Node Js Setup ##
-
+##### NodeJS ####
 dnf module disable nodejs -y &>>$LOG_FILE
-VALIDATE $? "Disabling Nodejs"
-
-dnf module enable nodejs:20 -y &>>$LOG_FILE
-VALIDATE $? "enabling Nodejs:20"
-
+VALIDATE $? "Disabling NodeJS"
+dnf module enable nodejs:20 -y  &>>$LOG_FILE
+VALIDATE $? "Enabling NodeJS 20"
 dnf install nodejs -y &>>$LOG_FILE
-VALIDATE $? "Installing Nodejs"
+VALIDATE $? "Installing NodeJS"
 
-##system user setup##
-id roboshop
+id roboshop &>>$LOG_FILE
 if [ $? -ne 0 ]; then
     useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
     VALIDATE $? "Creating system user"
-    else 
-        echo -e "user already exists....$Y SKIPPING $N"
+else
+    echo -e "User already exist ... $Y SKIPPING $N"
 fi
 
- ###setup of app directory ##
 
-mkdir -p /app 
-VALIDATE $? "Creating App directory"
 
-##Downloading the App code ##
+mkdir -p /app
+VALIDATE $? "Creating app directory"
 
-curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip  &>>$LOG_FILE
-VALIDATE $? "downloading the app code"
+curl -o /tmp/catalogue.zip https://roboshop-artifacts.s3.amazonaws.com/catalogue-v3.zip &>>$LOG_FILE
+VALIDATE $? "Downloading catalogue application"
 
 cd /app 
-VALIDATE $? "changing to app directory"
+VALIDATE $? "Changing to app directory"
 
 rm -rf /app/*
-VALIDATE $? "Removing the old code"
+VALIDATE $? "Removing existing code"
 
 unzip /tmp/catalogue.zip &>>$LOG_FILE
-VALIDATE $? "Unzip catalogue"
+VALIDATE $? "unzip catalogue"
 
-npm install  &>>$LOG_FILE
-VALIDATE $? "installing dependecies"
-
+npm install &>>$LOG_FILE
+VALIDATE $? "Install dependencies"
 
 cp $SCRIPT_DIR/catalogue.service /etc/systemd/system/catalogue.service
-VALIDATE $? "copy systemctl service"
+VALIDATE $? "Copy systemctl service"
 
 systemctl daemon-reload
-VALIDATE $? "reloading deamon"
+
 
 
 systemctl enable catalogue &>>$LOG_FILE
-VALIDATE $? "enable catalogue"
-
-
+VALIDATE $? "Enable catalogue"
 
 cp $SCRIPT_DIR/mongo.repo /etc/yum.repos.d/mongo.repo
-VALIDATE $? "copy mongo repo"
+VALIDATE $? "Copy mongo repo"
 
 dnf install mongodb-mongosh -y &>>$LOG_FILE
-VALIDATE $? "install mongodb client"
-
+VALIDATE $? "Install MongoDB client"
 
 INDEX=$(mongosh mongodb.daws86s.fun --quiet --eval "db.getMongo().getDBNames().indexOf('catalogue')")
 
@@ -100,4 +91,4 @@ else
 fi
 
 systemctl restart catalogue
-VALIDATE $? "restarting catalogue"
+VALIDATE $? "Restarted catalogue"
