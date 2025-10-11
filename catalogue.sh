@@ -45,7 +45,7 @@ if [ $? -ne 0 ]; then
     useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
     VALIDATE $? "Creating system user"
     else 
-        echo "user already exists....$Y SKIPPING $N"
+        echo -e "user already exists....$Y SKIPPING $N"
 fi
 
  ###setup of app directory ##
