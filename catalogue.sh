@@ -10,6 +10,7 @@ LOGS_FOLDER="/var/log/shell-roboshop"
 SCRIPT_NAME=$( echo $0 | cut -d "." -f2 )
 LOG_FILE="$LOGS_FOLDER/$SCRIPT_NAME.log"
 MONGODB_HOST=mongodb.daws86a.store
+SCRIPT_DIR=$PWD
 
 mkdir -p $LOGS_FOLDER
 echo "script started executed at: $(date)" | tee -a $LOG_FILE
@@ -42,6 +43,7 @@ VALIDATE $? "Installing Nodejs"
 
 useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>>$LOG_FILE
 VALIDATE $? "Creating system user"
+
  ###setup of app directory ##
 
 mkdir /app 
@@ -62,7 +64,7 @@ npm install  &>>$LOG_FILE
 VALIDATE $? "installing dependecies"
 
 
-cp catalogue.service /etc/systemd/system/catalogue.service
+cp $SCRIPT_DIR/catalogue.service /etc/systemd/system/catalogue.service
 VALIDATE $? "copy systemctl service"
 
 systemctl daemon-reload
